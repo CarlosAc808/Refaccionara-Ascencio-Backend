@@ -1,0 +1,2594 @@
+# BLUEPRINT Y CÓDIGO FUENTE COMPLETO DEL BACKEND (EXAMEN FINAL / REFACCIONARIA ASCENCIO)
+
+Este archivo contiene **todo el código fuente del backend sin excepciones**, esquemas de base de datos SQL, configuración de entorno y rutas para reconstruir este backend desde cero en cualquier servidor o máquina y obtener un funcionamiento 100% idéntico.
+
+---
+
+## ÍNDICE
+1. [Guía de Reconstrucción Paso a Paso](#1-guía-de-reconstrucción-paso-a-paso)
+2. [Configuración de Entorno (.env)](#2-configuración-de-entorno-env)
+3. [Dependencias del Sistema (composer.json)](#3-dependencias-del-sistema-composerjson)
+4. [Inicialización y Bootstrap (bootstrap/)](#4-inicialización-y-bootstrap-bootstrap)
+5. [Rutas del Sistema (routes/)](#5-rutas-del-sistema-routes)
+6. [Controladores Completos (app/Http/Controllers/)](#6-controladores-completos-apphttpcontrollers)
+7. [Modelos Eloquent Completos (app/Models/)](#7-modelos-eloquent-completos-appmodels)
+8. [Proveedores de Servicios (app/Providers/)](#8-proveedores-de-servicios-appproviders)
+9. [Script SQL de Base de Datos MySQL](#9-script-sql-de-base-de-datos-mysql)
+10. [Migraciones de Laravel (database/migrations/)](#10-migraciones-de-laravel-databasemigrations)
+11. [Directorio de Imágenes Públicas](#11-directorio-de-imágenes-públicas)
+
+---
+
+## 1. GUÍA DE RECONSTRUCCIÓN PASO A PASO
+
+Para crear un nuevo backend idéntico a este:
+1. Crear proyecto Laravel 11 base:
+   ```bash
+   composer create-project laravel/laravel backend_examen
+   cd backend_examen
+   composer require laravel/sanctum
+   ```
+2. Crear carpetas públicas requeridas para uploads de imágenes:
+   ```bash
+   mkdir -p public/imagenes_compras
+   mkdir -p public/imagenes_entradas
+   mkdir -p public/imagenes_formularios
+   mkdir -p public/imagenes_productos
+   mkdir -p public/imagenes_salidas
+   ```
+3. Copiar los archivos en sus respectivas rutas tal como se detallan en las siguientes secciones.
+4. Crear la base de datos MySQL `inventario` y ejecutar el script SQL de la [Sección 9](#9-script-sql-de-base-de-datos-mysql).
+5. Configurar el `.env` con las credenciales de MySQL.
+6. Iniciar el servidor backend:
+   ```bash
+   php artisan serve --port=8000
+   ```
+
+---
+
+## 2. CONFIGURACIÓN DE ENTORNO (.env)
+
+Archivo: `.env`
+```env
+APP_NAME=Laravel
+APP_ENV=local
+APP_KEY=base64:eF81Hgz3mbEQ0wV+0kkKg/fvNs6d7X1wdhkUvM7Mrt0=
+APP_DEBUG=true
+APP_TIMEZONE=UTC
+APP_URL=http://localhost
+
+APP_LOCALE=en
+APP_FALLBACK_LOCALE=en
+APP_FAKER_LOCALE=en_US
+
+APP_MAINTENANCE_DRIVER=file
+
+BCRYPT_ROUNDS=12
+
+LOG_CHANNEL=stack
+LOG_STACK=single
+LOG_DEPRECATIONS_CHANNEL=null
+LOG_LEVEL=debug
+
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=inventario
+DB_USERNAME=root
+DB_PASSWORD=carlosac02
+
+SESSION_DRIVER=database
+SESSION_LIFETIME=120
+SESSION_ENCRYPT=false
+SESSION_PATH=/
+SESSION_DOMAIN=null
+
+BROADCAST_CONNECTION=log
+FILESYSTEM_DISK=local
+QUEUE_CONNECTION=database
+
+CACHE_STORE=database
+CACHE_PREFIX=
+
+MEMCACHED_HOST=127.0.0.1
+
+REDIS_CLIENT=phpredis
+REDIS_HOST=127.0.0.1
+REDIS_PASSWORD=null
+REDIS_PORT=6379
+
+MAIL_MAILER=log
+MAIL_HOST=127.0.0.1
+MAIL_PORT=2525
+MAIL_USERNAME=null
+MAIL_PASSWORD=null
+MAIL_ENCRYPTION=null
+MAIL_FROM_ADDRESS="hello@example.com"
+MAIL_FROM_NAME="${APP_NAME}"
+
+AWS_ACCESS_KEY_ID=
+AWS_SECRET_ACCESS_KEY=
+AWS_DEFAULT_REGION=us-east-1
+AWS_BUCKET=
+AWS_USE_PATH_STYLE_ENDPOINT=false
+
+VITE_APP_NAME="${APP_NAME}"
+```
+
+---
+
+## 3. DEPENDENCIAS DEL SISTEMA (composer.json)
+
+Archivo: `composer.json`
+```json
+{
+    "name": "laravel/laravel",
+    "type": "project",
+    "description": "The skeleton application for the Laravel framework.",
+    "keywords": ["laravel", "framework"],
+    "license": "MIT",
+    "require": {
+        "php": "^8.2",
+        "laravel/framework": "^11.9",
+        "laravel/sanctum": "^4.0",
+        "laravel/tinker": "^2.9"
+    },
+    "require-dev": {
+        "fakerphp/faker": "^1.23",
+        "laravel/pint": "^1.13",
+        "laravel/sail": "^1.26",
+        "mockery/mockery": "^1.6",
+        "nunomaduro/collision": "^8.0",
+        "phpunit/phpunit": "^11.0.1"
+    },
+    "autoload": {
+        "psr-4": {
+            "App\\": "app/",
+            "Database\\Factories\\": "database/factories/",
+            "Database\\Seeders\\": "database/seeders/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "post-autoload-dump": [
+            "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
+            "@php artisan package:discover --ansi"
+        ],
+        "post-update-cmd": [
+            "@php artisan vendor:publish --tag=laravel-assets --ansi --force"
+        ],
+        "post-root-package-install": [
+            "@php -r \"file_exists('.env') || copy('.env.example', '.env');\""
+        ],
+        "post-create-project-cmd": [
+            "@php artisan key:generate --ansi",
+            "@php -r \"file_exists('database/database.sqlite') || touch('database/database.sqlite');\"",
+            "@php artisan migrate --graceful --ansi"
+        ]
+    },
+    "extra": {
+        "laravel": {
+            "dont-discover": []
+        }
+    },
+    "config": {
+        "optimize-autoloader": true,
+        "preferred-install": "dist",
+        "sort-packages": true,
+        "allow-plugins": {
+            "pestphp/pest-plugin": true,
+            "php-http/discovery": true
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}
+```
+
+---
+
+## 4. INICIALIZACIÓN Y BOOTSTRAP (bootstrap/)
+
+### Archivo: `bootstrap/app.php`
+```php
+<?php
+
+use Illuminate\Foundation\Application;
+use Illuminate\Foundation\Configuration\Exceptions;
+use Illuminate\Foundation\Configuration\Middleware;
+
+return Application::configure(basePath: dirname(__DIR__))
+    ->withRouting(
+        web: __DIR__.'/../routes/web.php',
+        api: __DIR__.'/../routes/api.php',
+        commands: __DIR__.'/../routes/console.php',
+        health: '/up',
+    )
+    ->withMiddleware(function (Middleware $middleware) {
+        //
+    })
+    ->withExceptions(function (Exceptions $exceptions) {
+        //
+    })->create();
+```
+
+### Archivo: `bootstrap/providers.php`
+```php
+<?php
+
+return [
+    App\Providers\AppServiceProvider::class,
+];
+```
+
+---
+
+## 5. RUTAS DEL SISTEMA (routes/)
+
+### Archivo: `routes/api.php`
+```php
+<?php
+
+use App\Http\Controllers\ComentariosController;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\FormularioController;
+use App\Http\Controllers\ComprasController;
+use App\Http\Controllers\UsuarioController;
+use App\Http\Controllers\EntradasController;
+use App\Http\Controllers\SalidasController;
+use App\Http\Controllers\ProveedorController;
+use App\Http\Controllers\ProductosController;
+use App\Http\Controllers\DistribuidorController;
+use App\Models\Productos;
+use App\Http\Controllers\CategoriasController;
+use App\Http\Controllers\InventarioController;
+
+Route::get('/user', function (Request $request) {
+    return $request->user();
+})->middleware('auth:sanctum');
+
+// Ruta para obtener el listado de formularios
+Route::get(
+    "/formularios",
+    [
+        FormularioController::class,
+        "getApiListado"
+    ]
+);
+
+// Ruta para obtener un formulario por su ID
+Route::get(
+    "/get_formulario/{id}",
+    [
+        FormularioController::class,
+        "getApiGetFormularioByID"
+    ]
+);
+
+// Ruta para eliminar un formulario por su ID
+Route::delete(
+    "/delete_formulario/{id}",
+    [
+        FormularioController::class,
+        "deleteApiEliminar"
+    ]
+);
+
+Route::post(
+    "/submit_formulario",
+    [
+        FormularioController::class,
+        "postApiAddFormulario"
+    ]
+);
+
+Route::put(
+    "update_formulario/{id}",
+    [
+        FormularioController::class,
+        "putApiUpdateFormulario"
+    ]
+);
+
+Route::post(
+    "search_producto",
+    [
+        FormularioController::class,
+        "getApiFiltro"
+    ]
+);
+
+//---------------listado_compras--------
+Route::get(
+    "/compras",
+    [
+        ComprasController::class,
+        "getApiListado_Compras"
+    ]
+);
+
+Route::get(
+    "/get_compra/{id}",
+    [
+        ComprasController::class,
+        "getApiGetComprasByID"
+    ]
+);
+
+Route::delete(
+    "/delete_compra/{id}",
+    [
+        ComprasController::class,
+        "deleteApiEliminar_Compras"
+    ]
+);
+
+Route::post(
+    "/comprass",
+    [
+        ComprasController::class,
+        "postApiAddCompras"
+    ]
+);
+
+Route::put(
+    "update_compra/{id}",
+    [
+        ComprasController::class,
+        "putApiUpdateCompras"
+    ]
+);
+
+//--------------------------------NUEVO REFACCIONARIA ASCENCIO-----------------------------
+//-------------------------------------USUARIOS-------------------------
+Route::post(
+    "/usuario",
+    [
+        UsuarioController::class,
+        "postApiAddUsuario"
+    ]
+);
+
+Route::get(
+    "/getUsuario",
+    [
+        UsuarioController::class,
+        "getApiUsuario"
+    ]
+);
+
+Route::delete(
+    "/delete_Usuario/{id}",
+    [
+        UsuarioController::class,
+        "deleteUsuario"
+    ]
+);
+
+Route::post(
+    "search_usuario",
+    [
+        UsuarioController::class,
+        "getApiFiltroUsuario"
+    ]
+);
+
+Route::post(
+    "/inicio_de_sesion",
+    [
+        UsuarioController::class,
+        "postApiVerificacion"
+    ]
+);
+
+Route::put(
+    "update_usuarios/{id}",
+    [
+        UsuarioController::class,
+        "putApiUpdateUsuarios"
+    ]
+);
+
+Route::get(
+    "/get_usuarios/{id}",
+    [
+        UsuarioController::class,
+        "getApiUsuario_editar"
+    ]
+);
+
+//-------------------------------------ENTRADAS--------------------------
+Route::get(
+    "/get_entradas/{id}",
+    [
+        EntradasController::class,
+        "getApiEntrada_editar"
+    ]
+);
+
+Route::put(
+    "update_entradas/{id}",
+    [
+        EntradasController::class,
+        "putApiUpdateEntradas"
+    ]
+);
+
+Route::post(
+    "/entradas",
+    [
+        EntradasController::class,
+        "postApiAddEntradas"
+    ]
+);
+
+Route::get(
+    "/getEntradas",
+    [
+        EntradasController::class,
+        "getApiEntrada"
+    ]
+);
+
+Route::delete(
+    "/delete_Entrada/{id}",
+    [
+        EntradasController::class,
+        "deleteEntrada"
+    ]
+);
+
+Route::post(
+    "search_entradas",
+    [
+        EntradasController::class,
+        "getApiFiltroEntrada"
+    ]
+);
+
+//------------------------SALIDAS-----------------------------
+Route::get(
+    "/get_salidas/{id}",
+    [
+        SalidasController::class,
+        "getApiSalida_editar"
+    ]
+);
+
+Route::put(
+    "update_salidas/{id}",
+    [
+        SalidasController::class,
+        "putApiUpdateSalidas"
+    ]
+);
+
+Route::post(
+    "/salidas",
+    [
+        SalidasController::class,
+        "postApiAddSalidas"
+    ]
+);
+
+Route::get(
+    "/getSalidas",
+    [
+        SalidasController::class,
+        "getApiSalida"
+    ]
+);
+
+Route::delete(
+    "/delete_Salidas/{id}",
+    [
+        SalidasController::class,
+        "deleteSalida"
+    ]
+);
+
+Route::post(
+    "search_salidas",
+    [
+        SalidasController::class,
+        "getApiFiltroSalida"
+    ]
+);
+
+//-----------------------PROVEEDORES-----------------------
+Route::post(
+    "/proveedor",
+    [
+        ProveedorController::class,
+        "postApiAddProveedor"
+    ]
+);
+
+Route::get(
+    "/getProveedor",
+    [
+        ProveedorController::class,
+        "getApiProveedor"
+    ]
+);
+
+Route::delete(
+    "/delete_Proveedor/{id}",
+    [
+        ProveedorController::class,
+        "deleteProveedor"
+    ]
+);
+
+Route::post(
+    "search_proveedor",
+    [
+        ProveedorController::class,
+        "getApiFiltroProveedor"
+    ]
+);
+
+Route::put(
+    "update_proveedores/{id}",
+    [
+        ProveedorController::class,
+        "putApiUpdateProveedor"
+    ]
+);
+
+Route::get(
+    "/get_proveedores/{id}",
+    [
+        ProveedorController::class,
+        "getApiProveedor_editar"
+    ]
+);
+
+//---------------------------------PRODUCTOS-------------
+Route::get(
+    "/getProductos",
+    [
+        ProductosController::class,
+        "getApiProductos"
+    ]
+);
+
+Route::post(
+    "search_productos",
+    [
+        ProductosController::class,
+        "getApiFiltroProductos"
+    ]
+);
+
+Route::put('/productos/{id}/stock', [ProductosController::class, 'actualizarStock']);
+
+Route::delete(
+    "/delete_producto/{id}",
+    [
+        ProductosController::class,
+        "deleteProducto"
+    ]
+);
+
+//----------------------------------------comentarios-------------------------------------
+Route::post(
+    "/comentarios",
+    [
+        ComentariosController::class,
+        "AddComentarios"
+    ]
+);
+
+Route::get(
+    "/get_comentarios",
+    [
+        ComentariosController::class,
+        "getApiComentarios"
+    ]
+);
+
+// Agregar distribuidor
+Route::post(
+    "/Distribuidor",
+    [
+        DistribuidorController::class,
+        "postApiAddDistribuidor"
+    ]
+);
+
+Route::get(
+    "/MostrarDistribuidor",
+    [
+        DistribuidorController::class,
+        "getApiDistribuidor"
+    ]
+);
+
+// Agregar Categorias
+Route::get(
+    "/MostrarCategorias",
+    [
+        CategoriasController::class,
+        "getApiCategorias"
+    ]
+);
+
+// Agregar Inventario 
+Route::post(
+    "/AgregarInventario",
+    [
+        InventarioController::class,
+        "postApiAddProducto"
+    ]
+);
+
+Route::get(
+    "/MostrarInventario",
+    [
+        InventarioController::class,
+        "getApiInventario"
+    ]
+);
+
+//Agregar Entradas
+Route::post(
+    "/Entradas",
+    [
+        EntradasController::class,
+        "postApiAddEntradas"
+    ]
+);
+
+//Agregar Salidas
+Route::post(
+    "/Salidas",
+    [
+        SalidasController::class,
+        "postApiAddSalidas"
+    ]
+);
+
+Route::get('/historial', [EntradasController::class, 'getHistorial']);
+
+//------------------------------Agregar Categoria------------------------------
+Route::post(
+    "/AddCategoria",
+    [
+        CategoriasController::class,
+        "postApiAddCategoria"
+    ]
+);
+```
+
+### Archivo: `routes/web.php`
+```php
+<?php
+
+use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\FormularioController;
+
+Route::get('/', function () {
+    return view('welcome');
+});
+```
+
+### Archivo: `routes/console.php`
+```php
+<?php
+
+use Illuminate\Foundation\Inspiring;
+use Illuminate\Support\Facades\Artisan;
+
+Artisan::command('inspire', function () {
+    $this->comment(Inspiring::quote());
+})->purpose('Display an inspiring quote')->hourly();
+```
+
+---
+
+## 6. CONTROLADORES COMPLETOS (app/Http/Controllers/)
+
+### 6.1. `app/Http/Controllers/Controller.php`
+```php
+<?php
+
+namespace App\Http\Controllers;
+
+abstract class Controller
+{
+    //
+}
+```
+
+### 6.2. `app/Http/Controllers/CategoriasController.php`
+```php
+<?php
+
+namespace App\Http\Controllers;
+use App\Models\Categorias;
+
+use Illuminate\Http\Request;
+
+class CategoriasController extends Controller
+{
+    public function getApiCategorias() {
+        $categorias = Categorias::all();
+        return response()->json([
+            'categorias' => $categorias
+        ]);
+    }
+
+    public function postApiAddCategoria(Request $request) {
+        $data = $request->all();
+        // Instanciamos un objeto formulario
+        $categorias = new Categorias();
+        // Se asignan los parámetros de la petición al objeto
+        $categorias->nombre = $data['nombre_categoria'];
+
+        // Se ejecuta el método save para agregar o modificar el registro
+        $categorias->save();
+    }
+}
+```
+
+### 6.3. `app/Http/Controllers/ComentariosController.php`
+```php
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Comentarios;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+
+class ComentariosController extends Controller{
+
+    public function getApiComentarios(){
+        $comentarios = Comentarios::all();
+        return ["comentario" => $comentarios];
+    }
+
+    public function AddComentarios(Request $request){
+        $data = $request->all();
+        // Instanciamos un objeto formulario
+        $comentarios = new Comentarios();
+        // Se asignan los parámetros de la petición al objeto
+        $comentarios->comentarios= $data['comentario'];
+        // Se ejecuta el método save para agregar o modificar el registro
+        $comentarios->save();
+    }
+}
+```
+
+### 6.4. `app/Http/Controllers/ComprasController.php`
+```php
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Compras;
+use App\Models\Formulario;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+
+class ComprasController extends Controller{
+
+    public function getApiListado_Compras() {
+        $compras = Compras::all(); // Obtiene todas las compras
+        return response()->json($compras); // Devuelve un JSON
+    }
+
+    // Agregamos un parámetro
+    public function getApiGetComprasByID($id = null) {
+        // Ejecutamos el método find para buscar por el pk
+        // "SELECT * FROM compras WHERE id=3"
+        $compras = Compras::find($id);
+        // Verificamos si el registro existe
+        if (!$compras) {
+            // Devolver un error 404 si no se encuentra el registro
+            return response()->json(['error' => 'Compra no encontrada'], 404);
+        }
+
+        // Devolver el registro en formato JSON
+        return response()->json($compras);
+    }
+
+    public function deleteApiEliminar_Compras($id) { 
+        // Se busca el registro de la tabla
+        // "SELECT * FROM compras WHERE id=1"
+        $compras = Compras::find($id);
+
+        // Se borra la imagen
+        if (!empty($compras->imagen)) {
+            Storage::delete(public_path('imagenes_compras').'/'.$compras->imagen);
+        }
+
+        // Se ejecuta el método delete
+        // "DELETE FROM compras WHERE id=1"
+        $compras->delete();
+    }
+
+    public function putApiUpdateCompras($id, Request $request) { 
+        // Obtenemos los parámetros de la petición
+        $data = $request->all();
+        $ruta_archivo_original = null;
+
+        // Se busca el registro con el id
+        $compras = Compras::find($id);
+
+        // Validamos si la imagen se está enviando
+        if ($request->hasFile('imagen')) {
+            // Validamos si hay una imagen en la base de datos
+            if ($compras->imagen != null) {
+                // Eliminar la imagen que se tiene en la base de datos
+                Storage::delete(public_path('imagenes_compras').'/'.$compras->imagen);
+            }
+            // Generamos un nombre aleatorio y concatenamos la extensión de la imagen
+            $nombreImagen = time().'.'.$request->imagen->extension();
+            // Movemos el archivo a la carpeta pública con el nombre
+            $request->imagen->move(public_path('imagenes_compras'), $nombreImagen);
+            // Asignamos el nombre del archivo
+            $ruta_archivo_original = $nombreImagen;
+        }
+
+        // Se asignan los parámetros de la petición al objeto
+        $compras->nombre = $data['nombre'];
+        $compras->descripcion = $data['descripcion'];
+        $compras->precio = $data['precio'];
+        $compras->precio = $data['fecha'];
+
+        if ($request->hasFile('imagen')) {
+            $compras->imagen = $ruta_archivo_original;
+        }
+
+        // Se ejecuta el método save para agregar o modificar el registro
+        $compras->save();
+    }
+
+    public function postApiAddCompras(Request $request) {
+        // Obtenemos los parámetros de la petición
+        $data = $request->all();
+        $producto_id = $data['id'];
+        $formulario = Formulario::find($producto_id);
+        // Instanciamos un objeto compras
+        $compras = new Compras();
+        
+        $compras->nombre = $formulario->nombre;
+        $compras->descripcion = $formulario->descripcion;
+        $compras->precio = $formulario->precio;
+        $compras->fecha = now();
+        $compras->imagen = $formulario->imagen;
+
+        // Se ejecuta el método save para agregar o modificar el registro
+        $compras->save();
+    }
+}
+```
+
+### 6.5. `app/Http/Controllers/DistribuidorController.php`
+```php
+<?php
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+use App\Models\Distribuidor;
+
+class DistribuidorController extends Controller
+{
+    public function postApiAddDistribuidor(Request $request) {
+        $data = $request->all();
+        // Instanciamos un objeto formulario
+        $distribuidores = new Distribuidor();
+        // Se asignan los parámetros de la petición al objeto
+        $distribuidores->nombre = $data['nombre_distribuidor'];
+        $distribuidores->ubicacion = $data['ubicacion_distribuidor'];
+        $distribuidores->telefono = $data['telefono_distribuidor'];
+        $distribuidores->email = $data['email_distribuidor'];
+
+        // Se ejecuta el método save para agregar o modificar el registro
+        $distribuidores->save();
+    }
+
+    public function getApiDistribuidor() {
+        $distribuidores = Distribuidor::all();
+        return ["distribuidores" => $distribuidores];
+    }
+}
+```
+
+### 6.6. `app/Http/Controllers/EntradasController.php`
+```php
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Entradas;
+use App\Models\Productos;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
+use App\Models\Perfil;
+use Illuminate\Support\Facades\Auth;
+use App\Models\inventario;
+use Illuminate\Support\Facades\DB;
+
+class EntradasController extends Controller{
+
+/*
+// TRAER TODOS LOS PRODUCTOS DE LA BASE DE DATOS 
+
+    public function getApiEntrada() {
+    $entradas = Entradas::all()->map(function ($entrada) {
+        // Formatea la fecha como 'YYYY-MM-DD' para evitar problemas de zona horaria
+        $entrada->fecha = \Carbon\Carbon::parse($entrada->fecha)->format('Y-m-d');
+        return $entrada;
+    });
+
+    return ["entradas" => $entradas];
+    }
+
+    public function getApiEntrada_editar($id) {
+    $entradas = Entradas::find($id);
+    return ["entradas" => [$entradas]];
+    }
+
+//----------------AGREGAR ENTRADAS ----------------------------
+    public function postApiAddEntradas(Request $request) {
+        // Obtenemos los parámetros de la petición
+        $data = $request->all();
+        // Establecemos un nombre para la imagen
+        $ruta_archivo_original = null;
+
+        // Instanciamos un objeto formulario
+        $entradas = new Entradas();
+
+        // Validamos si la imagen se está enviando
+        if ($request->hasFile('imagen')) {
+            // Generamos un nombre aleatorio y concatenamos la extensión de la imagen
+            $nombreImagen = time().'.'.$request->imagen->extension();
+            // Movemos el archivo a la carpeta pública con el nombre
+            $request->imagen->move(public_path('imagenes_entradas'), $nombreImagen);
+            // Asignamos el nombre del archivo
+            $ruta_archivo_original = $nombreImagen;
+        }
+
+        // Se asignan los parámetros de la petición al objeto
+        $entradas->nombre = $data['nombre'];
+        $entradas->sku = $data['sku'];
+        $entradas->descripcion = $data['descripcion'];
+        $entradas->precio = $data['precio'];
+        $entradas->proveedor = $data['proveedor'];
+        $entradas->stock = $data['stock'];
+        $entradas->denominador = $data['denominador'];
+        $entradas->fecha = $data['fecha'];
+
+        if ($request->hasFile('imagen')) {
+            $entradas->imagen = $ruta_archivo_original;
+        }
+
+        // Se ejecuta el método save para agregar o modificar el registro
+        $entradas->save();
+
+        //aqui va la copia a la tabla productos
+        $producto = Productos::where('sku', $data['sku'])->first();
+
+        if ($producto) {
+            $producto->nombre = $data['nombre'];
+            $producto->descripcion = $data['descripcion'];
+            $producto->precio = $data['precio'];
+            $producto->proveedor = $data['proveedor'];
+            $producto->stock += $data['stock']; // ← Aquí se suma el nuevo stock
+            $producto->denominador = $data['denominador'];
+            $producto->fecha = $data['fecha'];
+
+            if ($ruta_archivo_original !== null) {
+                $producto->imagen = $ruta_archivo_original;
+            }
+
+            $producto->save();
+        } else {
+            // Si no existe, lo creamos
+            $producto = new Productos();
+            $producto->nombre = $data['nombre'];
+            $producto->sku = $data['sku'];
+            $producto->descripcion = $data['descripcion'];
+            $producto->precio = $data['precio'];
+            $producto->proveedor = $data['proveedor'];
+            $producto->stock = $data['stock'];
+            $producto->denominador = $data['denominador'];
+            $producto->fecha = $data['fecha'];
+            
+            if ($ruta_archivo_original !== null) {
+                $producto->imagen = $ruta_archivo_original;
+            }
+
+            $producto->save();
+        }
+
+        return response()->json(['message' => 'Entrada registrada y producto actualizado correctamente']);
+    }
+
+        //----------------BORRAR SALIDA---------------------------------
+        public function deleteEntrada($id) {
+        $entradas = Entradas::find($id);
+        $entradas->delete();
+    }
+
+        public function getApiFiltroEntrada(Request $request) {
+        $filtro = $request->input("filtro");
+        $entradas = Entradas::Where('sku','LIKE',"%".$filtro."%")->get();
+        return ["entradas" => $entradas];
+    }
+
+        public function putApiUpdateEntradas($id, Request $request) {
+        $data = $request->all();
+        $ruta_archivo_original = null;
+    
+        $entradas = Entradas::find($id);
+    
+        if ($request->hasFile('imagen')) {
+            if ($entradas->imagen != null) {
+                Storage::delete(public_path('imagenes_entradas').'/'.$entradas->imagen);
+            }
+            $nombreImagen = time().'.'.$request->imagen->extension();
+            $request->imagen->move(public_path('imagenes_entradas'), $nombreImagen);
+            $ruta_archivo_original = $nombreImagen;
+        }
+    
+        $entradas->nombre = $data['nombre'];
+        $entradas->sku = $data['sku'];
+        $entradas->descripcion = $data['descripcion'];
+        $entradas->precio = $data['precio'];
+        $entradas->proveedor = $data['proveedor'];
+        $entradas->stock = $data['stock'];
+        $entradas->denominador = $data['denominador'];
+        $entradas->fecha = $data['fecha'];
+    
+        if ($request->hasFile('imagen')) {
+            $entradas->imagen = $ruta_archivo_original;
+        }
+    
+        $entradas->save();
+
+        $producto = Productos::where('sku', $data['sku'])->first();
+
+        if ($producto) {
+            $producto->nombre = $data['nombre'];
+            $producto->descripcion = $data['descripcion'];
+            $producto->precio = $data['precio'];
+            $producto->proveedor = $data['proveedor'];
+            $producto->stock = $data['stock'];
+            $producto->denominador = $data['denominador'];
+            $producto->fecha = $data['fecha'];
+
+            if ($ruta_archivo_original !== null) {
+                $producto->imagen = $ruta_archivo_original;
+            }
+
+            $producto->save();
+        }
+        return response()->json(['message' => 'Entrada actualizado correctamente']);
+    }
+*/
+
+//------------------------------Nuevo--------------------------------------------
+
+    public function postApiAddEntradas(Request $request){
+        $data = $request->all();
+
+        // ✅ guardar entrada
+        $entrada = new Entradas();
+        $entrada->producto_id = $data['select_producto'];
+        $entrada->cantidad = $data['cantidad_producto'];
+        $entrada->fecha = $data['fecha_movimiento'];
+        $entrada->precio_compra = $data['precio_producto'];
+        $entrada->proveedor_id = $data['proveedor_id'];
+        $entrada->save();
+
+        // 🔥 sumar stock
+        $producto = inventario::find($request->select_producto);
+        $producto->cantidad += $request->cantidad_producto;
+        $producto->save();
+
+        return response()->json([
+            "mensaje" => "Entrada registrada correctamente"
+        ]);
+    }
+
+    public function getHistorial()
+    {
+        $historial = DB::select("
+            SELECT 
+                e.id,
+                p.nombre AS producto,
+                e.cantidad,
+                e.fecha AS fecha_movimiento,
+                'Entrada' AS tipo,
+                e.precio_compra
+            FROM entradas e
+            JOIN productos p ON e.producto_id = p.id
+
+            UNION ALL
+
+            SELECT 
+                s.id,
+                p.nombre AS producto,
+                s.cantidad,
+                s.fecha AS fecha_movimiento,
+                'Salida' AS tipo,
+                s.precio_compra
+            FROM salidas s
+            JOIN productos p ON s.producto_id = p.id
+
+            ORDER BY fecha_movimiento DESC
+        ");
+
+        return response()->json($historial);
+    }
+}
+```
+
+### 6.7. `app/Http/Controllers/FormularioController.php`
+```php
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\formulario;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+
+class FormularioController extends Controller{
+
+     public function getApiListado() {
+        // Se usa el método all para obtener todos los formularios
+        // "SELECT * FROM formularios"
+        $formularios = Formulario::all();
+        return ["formularios" => $formularios];
+    }
+
+    // Agregamos un parámetro
+    public function getApiGetFormularioByID($id = null) {
+        // Ejecutamos el método find para buscar por el pk
+        // "SELECT * FROM formularios WHERE id=3"
+        $formulario = Formulario::find($id);
+        return $formulario;
+    }
+
+    public function deleteApiEliminar($id) {
+        // Se busca el registro de la tabla
+        // "SELECT * FROM formularios WHERE id=1"
+        $formulario = Formulario::find($id);
+
+        // Se borra la imagen
+        if (!empty($formulario->imagen)) {
+            Storage::delete(public_path('imagenes_formularios').'/'.$formulario->imagen);
+        }
+
+        // Se ejecuta el método delete
+        // "DELETE FROM formularios WHERE id=1"
+        $formulario->delete();
+    }
+
+    public function postApiAddFormulario(Request $request) {
+        // Obtenemos los parámetros de la petición
+        $data = $request->all();
+        // Establecemos un nombre para la imagen
+        $ruta_archivo_original = null;
+
+        // Instanciamos un objeto formulario
+        $formulario = new Formulario();
+
+        // Validamos si la imagen se está enviando
+        if ($request->hasFile('imagen')) {
+            // Generamos un nombre aleatorio y concatenamos la extensión de la imagen
+            $nombreImagen = time().'.'.$request->imagen->extension();
+            // Movemos el archivo a la carpeta pública con el nombre
+            $request->imagen->move(public_path('imagenes_formularios'), $nombreImagen);
+            // Asignamos el nombre del archivo
+            $ruta_archivo_original = $nombreImagen;
+        }
+
+        // Se asignan los parámetros de la petición al objeto
+        $formulario->nombre = $data['nombre'];
+        $formulario->descripcion = $data['descripcion'];
+        $formulario->precio = $data['precio'];
+
+        if ($request->hasFile('imagen')) {
+            $formulario->imagen = $ruta_archivo_original;
+        }
+
+        // Se ejecuta el método save para agregar o modificar el registro
+        $formulario->save();
+    }
+
+    public function putApiUpdateFormulario($id, Request $request) {
+        // Obtenemos los parámetros de la petición
+        $data = $request->all();
+        $ruta_archivo_original = null;
+    
+        // Se busca el registro con el id
+        $formulario = Formulario::find($id);
+    
+        // Validamos si la imagen se está enviando
+        if ($request->hasFile('imagen')) {
+            // Validamos si hay una imagen en la base de datos
+            if ($formulario->imagen != null) {
+                // Eliminar la imagen que se tiene en la base de datos
+                Storage::delete(public_path('imagenes_formularios').'/'.$formulario->imagen);
+            }
+            // Generamos un nombre aleatorio y concatenamos la extensión de la imagen
+            $nombreImagen = time().'.'.$request->imagen->extension();
+            // Movemos el archivo a la carpeta pública con el nombre
+            $request->imagen->move(public_path('imagenes_formularios'), $nombreImagen);
+            // Asignamos el nombre del archivo
+            $ruta_archivo_original = $nombreImagen;
+        }
+    
+        // Se asignan los parámetros de la petición al objeto
+        $formulario->nombre = $data['nombre'];
+        $formulario->descripcion = $data['descripcion'];
+        $formulario->precio = $data['precio'];
+    
+        if ($request->hasFile('imagen')) {
+            $formulario->imagen = $ruta_archivo_original;
+        }
+    
+        // Se ejecuta el método save para agregar o modificar el registro
+        $formulario->save();
+    }
+
+    public function getApiFiltro(Request $request) {
+        //Obtenemos los parametros de la peticion
+        $filtro = $request->input("filtro");
+        //Se usa el metodo all para obtener todos los usuarios
+        //"SELECT * FROM usuarios WHERE nombre like '%a%'"
+        $formulario = Formulario::Where('nombre','LIKE',"%".$filtro."%")->get();
+        return ["formularios" => $formulario];
+    }
+}
+```
+
+### 6.8. `app/Http/Controllers/InventarioController.php`
+```php
+<?php
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+use App\Models\inventario;
+use Illuminate\Support\Facades\DB;
+
+class InventarioController extends Controller
+{
+    public function postApiAddProducto(Request $request) {
+        // Obtenemos todos los datos enviados
+        $data = $request->all();
+
+        // Variable para la imagen
+        $rutaImagen = null;
+
+        // Creamos el objeto inventario
+        $producto = new inventario();
+
+        // Validamos si se está enviando una imagen
+        if ($request->hasFile('imagen_producto')) {
+            $nombreImagen = time() . '.' . $request->imagen_producto->extension();
+            $request->imagen_producto->move(public_path('imagenes_productos'), $nombreImagen);
+            $rutaImagen = 'imagenes_productos/' . $nombreImagen; // ← ruta correcta
+        }
+
+        // Asignamos los datos al objeto
+        $producto->nombre = $data['nombre_producto'];
+        $producto->descripcion = $data['descripcion']; // puedes usar otra columna si quieres
+        $producto->precio =   $data['precio_Producto'];
+        $producto->categoria_id = $data['categoria_id'];
+        $producto->proveedor_id = $data['proveedor_id_producto'];
+
+        // Asignamos la imagen si existe
+        if ($rutaImagen) {
+            $producto->imagen = $rutaImagen;
+        }
+
+        // Guardamos el registro
+        $producto->save();
+
+        // Retornamos respuesta JSON
+        return response()->json(['success' => true, 'producto' => $producto]);
+    }
+
+    public function getApiInventario() {
+        $producto = DB::select("
+            SELECT 
+                p.*,
+                c.nombre AS categoria
+            FROM productos p
+            JOIN categorias c ON p.categoria_id = c.id
+        ");
+
+        return ["producto" => $producto];
+    }
+}
+```
+
+### 6.9. `app/Http/Controllers/ProductosController.php`
+```php
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Entradas;
+use App\Models\Productos;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
+use App\Models\Perfil;
+use Illuminate\Support\Facades\Auth;
+
+class ProductosController extends Controller{
+
+// TRAER TODOS LOS PRODUCTOS DE LA BASE DE DATOS 
+    public function getApiProductos() {
+        // Se usa el método all para obtener todos los formularios
+        // "SELECT * FROM formularios"
+        $productos = Productos::all();
+        return ["productos" => $productos];
+    }
+
+    public function getApiFiltroProductos(Request $request){
+        //Obtenemos los parametros de la peticion
+        $filtro = $request->input("filtro");
+        //Se usa el metodo all para obtener todos los usuarios
+        //"SELECT * FROM usuarios WHERE nombre like '%a%'"
+        $productos = Productos::Where('sku','LIKE',"%".$filtro."%")->get();
+        return ["productos" => $productos];
+    }
+
+    public function actualizarStock(Request $request, $id)
+    {
+        $productos = Productos::find($id);
+
+        if (!$productos) {
+            return response()->json(['error' => 'Producto no encontrado'], 404);
+        }
+
+        $productos->stock = $request->input('stock');
+        $productos->save();
+
+        return response()->json(['mensaje' => 'Stock actualizado', 'stock' => $productos->stock]);
+    }
+
+    public function deleteProducto($id){
+        // Se busca el registro de la tabla
+        // "SELECT * FROM formularios WHERE id=1"
+        $productos = Productos::find($id);
+        // Se ejecuta el método delete
+        // "DELETE FROM formularios WHERE id=1"
+        $productos->delete();
+    }
+}
+```
+
+### 6.10. `app/Http/Controllers/ProveedorController.php`
+```php
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Proveedores;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Auth;
+
+class ProveedorController extends Controller{
+
+//---------------TRAER LOS PRODUCTOS DE LA BASE DE DATOS-------
+    public function getApiProveedor() {
+        $proveedores = Proveedores::all();
+        return ["proveedores" => $proveedores];
+    }
+
+    public function getApiProveedor_editar($id) {
+        $proveedor = Proveedores::find($id);
+        return ["proveedores" => [$proveedor]];
+    }
+
+//----------------AGREGAR USUARIO ----------------------------
+    public function postApiAddProveedor(Request $request) {
+        $data = $request->all();
+        // Instanciamos un objeto formulario
+        $proveedores = new Proveedores();
+        // Se asignan los parámetros de la petición al objeto
+        $proveedores->nombre = $data['nombre'];
+        $proveedores->ubicacion = $data['ubicacion'];
+        $proveedores->telefono = $data['telefono'];
+        // Se ejecuta el método save para agregar o modificar el registro
+        $proveedores->save();
+    }
+
+//----------------BORRAR PROVEEDOR---------------------------------
+    public function deleteProveedor($id) {
+        // Se busca el registro de la tabla
+        // "SELECT * FROM formularios WHERE id=1"
+        $proveedores = Proveedores::find($id);
+        // Se ejecuta el método delete
+        // "DELETE FROM formularios WHERE id=1"
+        $proveedores->delete();
+    }
+
+//----------------BUSQUEDA------------------------------------------
+    public function getApiFiltroProveedor(Request $request) {
+        //Obtenemos los parametros de la peticion
+        $filtro = $request->input("filtro");
+        //Se usa el metodo all para obtener todos los usuarios
+        //"SELECT * FROM usuarios WHERE nombre like '%a%'"
+        $proveedores = Proveedores::Where('nombre','LIKE',"%".$filtro."%")->get();
+        return ["proveedores" => $proveedores];
+    }
+
+    public function putApiUpdateProveedor($id, Request $request){
+        $data = $request->all();
+
+        $proveedores = Proveedores::find($id);
+        $proveedores->nombre = $data['nombre'];        // name del input "nombre"
+        $proveedores->ubicacion = $data['ubicacion'];
+        $proveedores->telefono = $data['telefono'];
+
+        $proveedores->save();
+
+        return response()->json(['message' => 'Proveedor actualizado correctamente']);
+    }
+}
+```
+
+### 6.11. `app/Http/Controllers/SalidasController.php`
+```php
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Salidas;
+use App\Models\Productos;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Auth;
+use App\Models\inventario;
+
+class SalidasController extends Controller{
+
+/*
+//----------------TRAER LOS PRODUCTOS DE LA BASE DE DATOS-----
+    public function getApiSalida() {
+    $salidas = Salidas::all()->map(function ($salida) {
+        // Formatea la fecha en 'YYYY-MM-DD'
+        $salida->fecha = \Carbon\Carbon::parse($salida->fecha)->format('Y-m-d');
+        return $salida;
+    });
+
+    return ["salidas" => $salidas];
+    }
+
+    public function getApiSalida_editar($id) {
+    $salidas = Salidas::find($id);
+    return ["salidas" => [$salidas]];
+    }
+
+//----------------AGREGAR SALIDAS ----------------------------
+    public function postApiAddSalidas(Request $request) {
+        // Obtenemos los parámetros de la petición
+        $data = $request->all();
+        // Establecemos un nombre para la imagen
+        $ruta_archivo_original = null;
+
+        // Instanciamos un objeto formulario
+        $salidas = new Salidas();
+
+        // Validamos si la imagen se está enviando
+        if ($request->hasFile('imagen')) {
+            // Generamos un nombre aleatorio y concatenamos la extensión de la imagen
+            $nombreImagen = time().'.'.$request->imagen->extension();
+            // Movemos el archivo a la carpeta pública con el nombre
+            $request->imagen->move(public_path('imagenes_salidas'), $nombreImagen);
+            // Asignamos el nombre del archivo
+            $ruta_archivo_original = $nombreImagen;
+        }
+
+        // Se asignan los parámetros de la petición al objeto
+        $salidas->nombre = $data['nombre'];
+        $salidas->sku = $data['sku'];
+        $salidas->precio = $data['precio'];
+        $salidas->proveedor = $data['proveedor'];
+        $salidas->cantidad = $data['cantidad'];
+        $salidas->denominador = $data['denominador'];
+        $salidas->fecha = $data['fecha'];
+
+        if ($request->hasFile('imagen')) {
+            $salidas->imagen = $ruta_archivo_original;
+        }
+
+        // Se ejecuta el método save para agregar o modificar el registro
+        $salidas->save();
+
+        // Buscar el producto por SKU
+        $producto = Productos::where('sku', $data['sku'])->first();
+
+        if ($producto) {
+            // Restar la cantidad de la salida al stock actual
+            $producto->stock = max(0, ($producto->stock ?? 0) - intval($data['cantidad']));
+            $producto->save();
+        }
+    }
+
+    //----------------BORRAR SALIDA---------------------------------
+    public function deleteSalida($id) {
+        $salidas = Salidas::find($id);
+        $salidas->delete();
+    }
+
+    //----------------BUSQUEDA------------------------------------------
+    public function getApiFiltroSalida(Request $request) {
+        $filtro = $request->input("filtro");
+        $salidas = Salidas::Where('sku','LIKE',"%".$filtro."%")->get();
+        return ["salidas" => $salidas];
+    }
+
+    public function putApiUpdateSalidas($id, Request $request) {
+        $data = $request->all();
+        $ruta_archivo_original = null;
+    
+        $salidas = Salidas::find($id);
+    
+        if ($request->hasFile('imagen')) {
+            if ($salidas->imagen != null) {
+                Storage::delete(public_path('imagenes_salidas').'/'.$salidas->imagen);
+            }
+            $nombreImagen = time().'.'.$request->imagen->extension();
+            $request->imagen->move(public_path('imagenes_salidas'), $nombreImagen);
+            $ruta_archivo_original = $nombreImagen;
+        }
+
+        $salidas->nombre = $data['nombre'];
+        $salidas->sku = $data['sku'];
+        $salidas->precio = $data['precio'];
+        $salidas->proveedor = $data['proveedor'];
+        $salidas->cantidad = $data['cantidad'];
+        $salidas->denominador = $data['denominador'];
+        $salidas->fecha = $data['fecha'];
+    
+        if ($request->hasFile('imagen')) {
+            $salidas->imagen = $ruta_archivo_original;
+        }
+    
+        $salidas->save();
+        return response()->json(['message' => 'salida actualizado correctamente']);
+
+        $producto = Productos::where('sku', $data['sku'])->first();
+
+        if ($producto) {
+            $producto->stock = ($producto->stock ?? 0) + $cantidad_antigua - intval($data['cantidad']);
+            if ($producto->stock < 0) {
+                $producto->stock = 0;
+            }
+            $producto->save();
+        }
+    }
+*/
+
+//----------------Nuevo------------------------------------------------
+    public function postApiAddSalidas(Request $request) {
+        $data = $request->all();
+
+        // ✅ Crear salida
+        $salida = new Salidas();
+        $salida->producto_id = $data['select_producto'];
+        $salida->cantidad = $data['cantidad_producto'];
+        $salida->fecha = $data['fecha_movimiento'];
+        $salida->precio_compra = $data['precio_producto'];
+        $salida->save(); // 🔥 guardar salida primero
+
+        // 🔥 RESTAR STOCK (producto)
+        $producto = inventario::find($request->select_producto);
+
+        $producto->cantidad -= $request->cantidad_producto;
+        $producto->save();
+
+        return response()->json(["mensaje" => "Salida registrada"]);
+    }
+}
+```
+
+### 6.12. `app/Http/Controllers/UsuarioController.php`
+```php
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\usuario;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
+use App\Models\Perfil;
+use Illuminate\Support\Facades\Auth;
+
+class UsuarioController extends Controller{
+
+//----------------TRAER LOS PRODUCTOS DE LA BASE DE DATOS-----
+    public function getApiUsuario() {
+        $usuario = Usuario::all();
+        return ["usuario" => $usuario];
+    }
+
+    public function getApiUsuario_editar($id) {
+        $usuario = Usuario::find($id);
+        return ["usuario" => [$usuario]];
+    }
+
+//----------------AAGREGAR USUARIO ----------------------------
+    public function postApiAddUsuario(Request $request) {
+        // Obtenemos los parámetros de la petición
+        $data = $request->all();
+        // Instanciamos un objeto formulario
+        $usuario = new Usuario();
+        // Se asignan los parámetros de la petición al objeto
+        $usuario->nombre = $data['nombre'];
+        $usuario->correo = $data['correo'];
+        $usuario->password = Hash::make($data['password']);
+        // Se ejecuta el método save para agregar o modificar el registro
+        $usuario->save();
+        return response()->json(['message' => 'Usuario guardado con éxito', 'id' => $usuario->id], 201);
+    }
+
+//----------------BORRAR USUARIO---------------------------------
+    public function deleteUsuario($id) {
+        // Se busca el registro de la tabla
+        $usuario = Usuario::find($id);
+        // Se ejecuta el método delete
+        $usuario->delete();
+    }
+
+    public function getApiFiltroUsuario(Request $request) {
+        //Obtenemos los parametros de la peticion
+        $filtro = $request->input("filtro");
+        //Se usa el metodo all para obtener todos los usuarios
+        $usuario = Usuario::Where('correo','LIKE',"%".$filtro."%")->get();
+        return ["usuario" => $usuario];
+    }
+
+//--------------------------------------LOGIN--------------------------------
+    public function postApiVerificacion(Request $request) {
+        // Obtenemos los parámetros de la petición
+        $data = $request->all();
+
+        $correo = $data['correo'];
+        $password = $data['password'];
+
+        // Busca al usuario por correo
+        $usuario_existe = Usuario::where('correo', $correo)->first();
+
+        // Verifica que el usuario exista y que la contraseña coincida
+        if ($usuario_existe && Hash::check($password, $usuario_existe->password)) {
+
+            return response()->json([
+                'message_exitoso' => 'Inicio de sesión exitoso',
+                'id' => $usuario_existe->id,
+                'correo' => $usuario_existe->correo,
+                'nombre' => $usuario_existe->nombre ,
+            ], 200);
+        } else {
+            return response()->json([
+                'message' => 'Usuario o contraseña incorrectos'
+            ], 401);
+        }
+    }
+
+    public function putApiUpdateUsuarios($id, Request $request){
+        $data = $request->all();
+
+        $usuario = Usuario::find($id);
+        $usuario->correo = $data['correo'];
+        // Solo actualiza la contraseña si se ingresó una nueva
+        if (!empty($data['password'])) {
+            $usuario->password = Hash::make($data['password']);
+        }
+
+        $usuario->save();
+
+        return response()->json(['message' => 'usuarioo actualizado correctamente']);
+    }
+}
+```
+
+---
+
+## 7. MODELOS ELOQUENT COMPLETOS (app/Models/)
+
+### 7.1. `app/Models/Categorias.php`
+```php
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class Categorias extends Model
+{
+    protected $table = 'categorias'; 
+
+    protected $primaryKey = 'id';
+
+    public $timestamps = false; 
+
+    protected $fillable = [
+        'nombre'
+    ];
+}
+```
+
+### 7.2. `app/Models/comentarios.php`
+```php
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class Comentarios extends Model
+{
+    use HasFactory;
+
+    //Definimos que tabla es de la base de datos
+    protected $table = "comentarios";
+
+    //Definimos el primary key de la tabla
+    protected $primaryKey = "id";
+
+    //Dehabilitar los campos de created_at y update_at
+    public $timestamps = false;
+
+    //Definimos las demas columnas que tenemos en la tabla
+    protected $fillable = [
+        'comentarios'
+    ];
+}
+```
+
+### 7.3. `app/Models/compras.php`
+```php
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class Compras extends Model
+{
+    use HasFactory;
+
+    //Definimos que tabla es de la base de datos
+    protected $table = "compras";
+
+    //Definimos el primary key de la tabla
+    protected $primaryKey = "id";
+
+    //Dehabilitar los campos de created_at y update_at
+    public $timestamps = false;
+
+    //Definimos las demas columnas que tenemos en la tabla
+    protected $fillable = [
+        'nombre',
+        "descripcion",
+        "precio",
+        "imagen"
+    ];
+}
+```
+
+### 7.4. `app/Models/Distribuidor.php`
+```php
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class Distribuidor extends Model
+{
+    protected $table = 'proveedores'; 
+
+    protected $primaryKey = 'id';
+
+    public $timestamps = false; 
+
+    protected $fillable = [
+        'nombre',
+        'ubicacion',
+        'telefono',
+        'email'
+    ];
+}
+```
+
+### 7.5. `app/Models/entradas.php`
+```php
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class Entradas extends Model
+{
+    use HasFactory;
+
+    //Definimos que tabla es de la base de datos
+    protected $table = "entradas";
+
+    //Definimos el primary key de la tabla
+    protected $primaryKey = "id";
+
+    //Dehabilitar los campos de created_at y update_at
+    public $timestamps = false;
+
+    //Definimos las demas columnas que tenemos en la tabla
+    protected $fillable = [
+        'producto_id',
+        "cantidad",
+        "fecha",
+        "precio_compra",
+        "proveedor_id"
+    ];
+
+    public function proveedor() {
+        return $this->belongsTo(Proveedores::class, 'proveedor_id');
+    }
+
+    public function producto() {
+        return $this->belongsTo(inventario::class, 'producto_id');
+    }
+}
+```
+
+### 7.6. `app/Models/formulario.php`
+```php
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class Formulario extends Model
+{
+    use HasFactory;
+
+    //Definimos que tabla es de la base de datos
+    protected $table = "formulario";
+
+    //Definimos el primary key de la tabla
+    protected $primaryKey = "id";
+
+    //Dehabilitar los campos de created_at y update_at
+    public $timestamps = false;
+
+    //Definimos las demas columnas que tenemos en la tabla
+    protected $fillable = [
+        'nombre',
+        "descripccion",
+        "precio",
+        "imagen"
+    ];
+}
+```
+
+### 7.7. `app/Models/inventario.php`
+```php
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class inventario extends Model
+{
+    protected $table = 'productos'; 
+
+    protected $primaryKey = 'id';
+
+    public $timestamps = false; 
+
+    protected $fillable = [
+        'nombre',
+        'descripcion',
+        'precio',
+        'imagen',
+        'categoria_id',
+        'proveedor_id',
+    ];
+
+    // Relación con categorías
+    public function categoria() {
+        return $this->belongsTo(Categorias::class, 'categoria_id');
+    }
+
+    public function proveedor() {
+        return $this->belongsTo(Proveedores::class, 'proveedor_id');
+    }
+
+    public function entradas() {
+        return $this->hasMany(entradas::class);
+    }
+
+    public function salidas() {
+        return $this->hasMany(salidas::class);
+    }
+}
+```
+
+### 7.8. `app/Models/productos.php`
+```php
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use App\Models\Proveedores;
+
+class Productos extends Model
+{
+    use HasFactory;
+
+    //Definimos que tabla es de la base de datos
+    protected $table = "productos";
+
+    //Definimos el primary key de la tabla
+    protected $primaryKey = "id";
+
+    //Dehabilitar los campos de created_at y update_at
+    public $timestamps = false;
+
+    //Definimos las demas columnas que tenemos en la tabla
+    protected $fillable = [
+        'nombre',
+        "descripcion",
+        "precio",
+        "proveedor",
+        "stock",
+        "fecha",
+        "imagen",
+        "sku",
+        "denominador"
+    ];
+}
+```
+
+### 7.9. `app/Models/proveedores.php`
+```php
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class Proveedores extends Model
+{
+    use HasFactory;
+
+    //Definimos que tabla es de la base de datos
+    protected $table = "proveedores";
+
+    //Definimos el primary key de la tabla
+    protected $primaryKey = "id";
+
+    //Dehabilitar los campos de created_at y update_at
+    public $timestamps = false;
+
+    //Definimos las demas columnas que tenemos en la tabla
+    protected $fillable = [
+        'nombre',
+        "ubicacion",
+        "telefono"
+    ];
+}
+```
+
+### 7.10. `app/Models/salidas.php`
+```php
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class Salidas extends Model
+{
+    use HasFactory;
+
+    //Definimos que tabla es de la base de datos
+    protected $table = "salidas";
+
+    //Definimos el primary key de la tabla
+    protected $primaryKey = "id";
+
+    //Dehabilitar los campos de created_at y update_at
+    public $timestamps = false;
+
+    //Definimos las demas columnas que tenemos en la tabla
+    protected $fillable = [
+        'producto_id',
+        "cantidad",
+        "fecha",
+        "precio_compra",
+    ];
+
+    public function producto() {
+        return $this->belongsTo(inventario::class, 'producto_id');
+    }
+}
+```
+
+### 7.11. `app/Models/User.php`
+```php
+<?php
+
+namespace App\Models;
+
+// use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
+
+class User extends Authenticatable
+{
+    use HasFactory, Notifiable;
+
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array<int, string>
+     */
+    protected $fillable = [
+        'name',
+        'email',
+        'password',
+    ];
+
+    /**
+     * The attributes that should be hidden for serialization.
+     *
+     * @var array<int, string>
+     */
+    protected $hidden = [
+        'password',
+        'remember_token',
+    ];
+
+    /**
+     * Get the attributes that should be cast.
+     *
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'email_verified_at' => 'datetime',
+            'password' => 'hashed',
+        ];
+    }
+}
+```
+
+### 7.12. `app/Models/usuario.php`
+```php
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class Usuario extends Model
+{
+    use HasFactory;
+
+    //Definimos que tabla es de la base de datos
+    protected $table = "usuarios";
+
+    //Definimos el primary key de la tabla
+    protected $primaryKey = "id";
+
+    //Dehabilitar los campos de created_at y update_at
+    public $timestamps = false;
+
+    //Definimos las demas columnas que tenemos en la tabla
+    protected $fillable = [
+        'correo',
+        "password",
+        "nombre"
+    ];
+}
+```
+
+---
+
+## 8. PROVEEDORES DE SERVICIOS (app/Providers/)
+
+### Archivo: `app/Providers/AppServiceProvider.php`
+```php
+<?php
+
+namespace App\Providers;
+
+use Illuminate\Support\ServiceProvider;
+
+class AppServiceProvider extends ServiceProvider
+{
+    /**
+     * Register any application services.
+     */
+    public function register(): void
+    {
+        //
+    }
+
+    /**
+     * Bootstrap any application services.
+     */
+    public function boot(): void
+    {
+        //
+    }
+}
+```
+
+---
+
+## 9. SCRIPT SQL DE BASE DE DATOS MYSQL
+
+Ejecutar este script completo en MySQL (phpMyAdmin o terminal MySQL) para crear la base de datos `inventario` con todas sus tablas, llaves primarias y foráneas exactamente como las usa este backend:
+
+```sql
+CREATE DATABASE IF NOT EXISTS `inventario` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE `inventario`;
+
+-- 1. Tabla de Categorías
+CREATE TABLE IF NOT EXISTS `categorias` (
+  `id` INT NOT NULL AUTO_INCREMENT,
+  `nombre` VARCHAR(100) NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 2. Tabla de Proveedores / Distribuidores
+CREATE TABLE IF NOT EXISTS `proveedores` (
+  `id` INT NOT NULL AUTO_INCREMENT,
+  `nombre` VARCHAR(100) NOT NULL,
+  `telefono` VARCHAR(20) DEFAULT NULL,
+  `email` VARCHAR(100) DEFAULT NULL,
+  `ubicacion` VARCHAR(200) DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 3. Tabla de Productos / Inventario
+CREATE TABLE IF NOT EXISTS `productos` (
+  `id` INT NOT NULL AUTO_INCREMENT,
+  `nombre` VARCHAR(100) NOT NULL,
+  `descripcion` TEXT DEFAULT NULL,
+  `precio` DECIMAL(10,2) DEFAULT NULL,
+  `imagen` VARCHAR(255) DEFAULT NULL,
+  `categoria_id` INT DEFAULT NULL,
+  `proveedor_id` INT DEFAULT NULL,
+  `cantidad` INT DEFAULT 0,
+  `stock` INT DEFAULT 0,
+  `sku` VARCHAR(100) DEFAULT NULL,
+  `denominador` VARCHAR(100) DEFAULT NULL,
+  `fecha` DATE DEFAULT NULL,
+  `proveedor` VARCHAR(100) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `fk_productos_categoria` (`categoria_id`),
+  KEY `fk_productos_proveedor` (`proveedor_id`),
+  CONSTRAINT `fk_productos_categoria` FOREIGN KEY (`categoria_id`) REFERENCES `categorias` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT `fk_productos_proveedor` FOREIGN KEY (`proveedor_id`) REFERENCES `proveedores` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 4. Tabla de Entradas
+CREATE TABLE IF NOT EXISTS `entradas` (
+  `id` INT NOT NULL AUTO_INCREMENT,
+  `producto_id` INT NOT NULL,
+  `cantidad` INT NOT NULL,
+  `fecha` DATE NOT NULL,
+  `precio_compra` DECIMAL(10,2) DEFAULT NULL,
+  `proveedor_id` INT DEFAULT NULL,
+  `nombre` VARCHAR(100) DEFAULT NULL,
+  `sku` VARCHAR(100) DEFAULT NULL,
+  `descripcion` TEXT DEFAULT NULL,
+  `precio` DECIMAL(10,2) DEFAULT NULL,
+  `proveedor` VARCHAR(100) DEFAULT NULL,
+  `stock` INT DEFAULT NULL,
+  `denominador` VARCHAR(100) DEFAULT NULL,
+  `imagen` VARCHAR(255) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `fk_entradas_producto` (`producto_id`),
+  KEY `fk_entradas_proveedor` (`proveedor_id`),
+  CONSTRAINT `fk_entradas_producto` FOREIGN KEY (`producto_id`) REFERENCES `productos` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `fk_entradas_proveedor` FOREIGN KEY (`proveedor_id`) REFERENCES `proveedores` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 5. Tabla de Salidas
+CREATE TABLE IF NOT EXISTS `salidas` (
+  `id` INT NOT NULL AUTO_INCREMENT,
+  `producto_id` INT NOT NULL,
+  `cantidad` INT NOT NULL,
+  `fecha` DATE NOT NULL,
+  `precio_compra` DECIMAL(10,2) DEFAULT NULL,
+  `nombre` VARCHAR(100) DEFAULT NULL,
+  `sku` VARCHAR(100) DEFAULT NULL,
+  `precio` DECIMAL(10,2) DEFAULT NULL,
+  `proveedor` VARCHAR(100) DEFAULT NULL,
+  `denominador` VARCHAR(100) DEFAULT NULL,
+  `imagen` VARCHAR(255) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `fk_salidas_producto` (`producto_id`),
+  CONSTRAINT `fk_salidas_producto` FOREIGN KEY (`producto_id`) REFERENCES `productos` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 6. Tabla de Usuarios (Sistema personalizado con Bcrypt)
+CREATE TABLE IF NOT EXISTS `usuarios` (
+  `id` INT NOT NULL AUTO_INCREMENT,
+  `correo` VARCHAR(255) NOT NULL,
+  `password` VARCHAR(255) NOT NULL,
+  `nombre` VARCHAR(100) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_usuarios_correo` (`correo`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 7. Tabla de Compras
+CREATE TABLE IF NOT EXISTS `compras` (
+  `id` INT NOT NULL AUTO_INCREMENT,
+  `nombre` VARCHAR(150) DEFAULT NULL,
+  `descripcion` TEXT DEFAULT NULL,
+  `precio` DECIMAL(10,2) DEFAULT NULL,
+  `imagen` VARCHAR(255) DEFAULT NULL,
+  `fecha` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 8. Tabla de Formulario
+CREATE TABLE IF NOT EXISTS `formulario` (
+  `id` INT NOT NULL AUTO_INCREMENT,
+  `nombre` VARCHAR(150) DEFAULT NULL,
+  `descripcion` TEXT DEFAULT NULL,
+  `descripccion` TEXT DEFAULT NULL,
+  `precio` DECIMAL(10,2) DEFAULT NULL,
+  `imagen` VARCHAR(255) DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 9. Tabla de Comentarios
+CREATE TABLE IF NOT EXISTS `comentarios` (
+  `id` INT NOT NULL AUTO_INCREMENT,
+  `comentarios` TEXT NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+```
+
+---
+
+## 10. MIGRACIONES DE LARAVEL (database/migrations/)
+
+### 10.1. `database/migrations/0001_01_01_000000_create_users_table.php`
+```php
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::create('users', function (Blueprint $table) {
+            $table->id();
+            $table->string('name');
+            $table->string('email')->unique();
+            $table->timestamp('email_verified_at')->nullable();
+            $table->string('password');
+            $table->rememberToken();
+            $table->timestamps();
+        });
+
+        Schema::create('password_reset_tokens', function (Blueprint $table) {
+            $table->string('email')->primary();
+            $table->string('token');
+            $table->timestamp('created_at')->nullable();
+        });
+
+        Schema::create('sessions', function (Blueprint $table) {
+            $table->string('id')->primary();
+            $table->foreignId('user_id')->nullable()->index();
+            $table->string('ip_address', 45)->nullable();
+            $table->text('user_agent')->nullable();
+            $table->longText('payload');
+            $table->integer('last_activity')->index();
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists('users');
+        Schema::dropIfExists('password_reset_tokens');
+        Schema::dropIfExists('sessions');
+    }
+};
+```
+
+### 10.2. `database/migrations/0001_01_01_000001_create_cache_table.php`
+```php
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::create('cache', function (Blueprint $table) {
+            $table->string('key')->primary();
+            $table->mediumText('value');
+            $table->integer('expiration');
+        });
+
+        Schema::create('cache_locks', function (Blueprint $table) {
+            $table->string('key')->primary();
+            $table->string('owner');
+            $table->integer('expiration');
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists('cache');
+        Schema::dropIfExists('cache_locks');
+    }
+};
+```
+
+### 10.3. `database/migrations/0001_01_01_000002_create_jobs_table.php`
+```php
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::create('jobs', function (Blueprint $table) {
+            $table->id();
+            $table->string('queue')->index();
+            $table->longText('payload');
+            $table->unsignedTinyInteger('attempts');
+            $table->unsignedInteger('reserved_at')->nullable();
+            $table->unsignedInteger('available_at');
+            $table->unsignedInteger('created_at');
+        });
+
+        Schema::create('job_batches', function (Blueprint $table) {
+            $table->string('id')->primary();
+            $table->string('name');
+            $table->integer('total_jobs');
+            $table->integer('pending_jobs');
+            $table->integer('failed_jobs');
+            $table->longText('failed_job_ids');
+            $table->mediumText('options')->nullable();
+            $table->integer('cancelled_at')->nullable();
+            $table->integer('created_at');
+            $table->integer('finished_at')->nullable();
+        });
+
+        Schema::create('failed_jobs', function (Blueprint $table) {
+            $table->id();
+            $table->string('uuid')->unique();
+            $table->text('connection');
+            $table->text('queue');
+            $table->longText('payload');
+            $table->longText('exception');
+            $table->timestamp('failed_at')->useCurrent();
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists('jobs');
+        Schema::dropIfExists('job_batches');
+        Schema::dropIfExists('failed_jobs');
+    }
+};
+```
+
+### 10.4. `database/migrations/2024_09_19_032236_create_personal_access_tokens_table.php`
+```php
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::create('personal_access_tokens', function (Blueprint $table) {
+            $table->id();
+            $table->morphs('tokenable');
+            $table->string('name');
+            $table->string('token', 64)->unique();
+            $table->text('abilities')->nullable();
+            $table->timestamp('last_used_at')->nullable();
+            $table->timestamp('expires_at')->nullable();
+            $table->timestamps();
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists('personal_access_tokens');
+    }
+};
+```
+
+### 10.5. `database/migrations/2024_09_19_032410_create_formularios_table.php`
+```php
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::create('formularios', function (Blueprint $table) {
+            $table->id();
+            $table->timestamps();
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists('formularios');
+    }
+};
+```
+
+### 10.6. Seeders y Factories
+
+#### `database/seeders/DatabaseSeeder.php`
+```php
+<?php
+
+namespace Database\Seeders;
+
+use App\Models\User;
+use Illuminate\Database\Seeder;
+
+class DatabaseSeeder extends Seeder
+{
+    /**
+     * Seed the application's database.
+     */
+    public function run(): void
+    {
+        User::factory()->create([
+            'name' => 'Test User',
+            'email' => 'test@example.com',
+        ]);
+    }
+}
+```
+
+#### `database/factories/UserFactory.php`
+```php
+<?php
+
+namespace Database\Factories;
+
+use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
+
+/**
+ * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\User>
+ */
+class UserFactory extends Factory
+{
+    protected static ?string $password;
+
+    public function definition(): array
+    {
+        return [
+            'name' => fake()->name(),
+            'email' => fake()->unique()->safeEmail(),
+            'email_verified_at' => now(),
+            'password' => static::$password ??= Hash::make('password'),
+            'remember_token' => Str::random(10),
+        ];
+    }
+
+    public function unverified(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'email_verified_at' => null,
+        ]);
+    }
+}
+```
+
+---
+
+## 11. DIRECTORIO DE IMÁGENES PÚBLICAS
+
+El backend sube y almacena archivos físicos en las siguientes carpetas dentro de `public/`:
+- `public/imagenes_compras/` (Manejado por `ComprasController`)
+- `public/imagenes_entradas/` (Manejado por `EntradasController`)
+- `public/imagenes_formularios/` (Manejado por `FormularioController`)
+- `public/imagenes_productos/` (Manejado por `InventarioController`)
+- `public/imagenes_salidas/` (Manejado por `SalidasController`)
+
+Formato de nomenclatura usado al almacenar imágenes:
+```php
+$nombreImagen = time() . '.' . $request->imagen->extension();
+```
+Ruta pública accesible: `/imagenes_* / {nombreImagen}`.
